@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useCallback, Component, ReactNode } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, Platform } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  Text,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from './src/constants/theme';
@@ -7,6 +14,7 @@ import { LanguageProvider } from './src/i18n/LanguageContext';
 import { CalendarHeader } from './src/components/CalendarHeader';
 import { TrackingGrid } from './src/components/TrackingGrid';
 import { LanguageToggle } from './src/components/LanguageToggle';
+import { useLanguage } from './src/i18n/LanguageContext';
 import { DayData } from './src/types';
 import { PlatformKey, ColumnKey } from './src/constants/data';
 import { loadDayData, saveDayData } from './src/storage/dayStorage';
@@ -37,9 +45,18 @@ class ErrorBoundary extends Component<
 const Screen = Platform.OS === 'web' ? View : SafeAreaView;
 
 function MainApp() {
+  const { strings } = useLanguage();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [dayData, setDayData] = useState<DayData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.body.style.overflow = 'auto';
+      document.documentElement.style.height = '100%';
+      document.body.style.height = '100%';
+    }
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -82,26 +99,40 @@ function MainApp() {
   };
 
   return (
-    <Screen style={styles.container} {...(Platform.OS === 'web' ? {} : { edges: ['top'] as const })}>
+    <Screen
+      style={styles.container}
+      {...(Platform.OS === 'web' ? {} : { edges: ['top'] as const })}
+    >
       <StatusBar style="dark" />
       <View style={styles.langBar}>
         <LanguageToggle compact />
       </View>
-      <CalendarHeader
-        selectedDate={selectedDate}
-        onSelectDate={setSelectedDate}
-      />
-      {loading || !dayData ? (
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      ) : (
-        <TrackingGrid
-          data={dayData}
-          onToggleTask={handleToggleTask}
-          onUpdateNotes={handleUpdateNotes}
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator
+        keyboardShouldPersistTaps="handled"
+      >
+        <CalendarHeader
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
         />
-      )}
+
+        <Text style={styles.scrollHint}>{strings.scrollHint}</Text>
+
+        {loading || !dayData ? (
+          <View style={styles.loading}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : (
+          <TrackingGrid
+            data={dayData}
+            onToggleTask={handleToggleTask}
+            onUpdateNotes={handleUpdateNotes}
+          />
+        )}
+      </ScrollView>
     </Screen>
   );
 }
@@ -128,6 +159,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    ...(Platform.OS === 'web'
+      ? ({ height: '100vh', maxHeight: '100vh' } as object)
+      : {}),
   },
   langBar: {
     position: 'absolute',
@@ -135,8 +169,21 @@ const styles = StyleSheet.create({
     right: 16,
     zIndex: 10,
   },
-  loading: {
+  scroll: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 32,
+  },
+  scrollHint: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: colors.textMuted,
+    paddingVertical: 8,
+  },
+  loading: {
+    paddingVertical: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },

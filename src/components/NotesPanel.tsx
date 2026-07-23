@@ -2,22 +2,18 @@ import React from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { colors, spacing, borderRadius } from '../constants/theme';
 import { useLanguage } from '../i18n/LanguageContext';
-import { PlatformKey } from '../constants/data';
 
 interface NotesPanelProps {
-  platform: PlatformKey;
   value: string;
   onChange: (text: string) => void;
 }
 
-export function NotesPanel({ platform, value, onChange }: NotesPanelProps) {
+export function NotesPanel({ value, onChange }: NotesPanelProps) {
   const { strings } = useLanguage();
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>
-        {strings.notes} — {strings.platforms[platform]}
-      </Text>
+      <Text style={styles.label}>{strings.notes}</Text>
       <TextInput
         style={styles.input}
         value={value}
@@ -33,8 +29,7 @@ export function NotesPanel({ platform, value, onChange }: NotesPanelProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.md,
+    marginTop: spacing.xs,
   },
   label: {
     fontSize: 12,
@@ -48,7 +43,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.sm,
-    minHeight: 56,
+    minHeight: 48,
     fontSize: 14,
     color: colors.text,
   },

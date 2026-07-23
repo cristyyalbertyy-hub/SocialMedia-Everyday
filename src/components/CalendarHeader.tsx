@@ -14,6 +14,8 @@ interface CalendarHeaderProps {
   onSelectDate: (date: Date) => void;
 }
 
+const DAY_CELL_HEIGHT = 30;
+
 function isSameDay(a: Date, b: Date): boolean {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -36,6 +38,10 @@ export function CalendarHeader({ selectedDate, onSelectDate }: CalendarHeaderPro
   useEffect(() => {
     getDaysWithData(viewMonth.getFullYear(), viewMonth.getMonth()).then(setDaysWithData);
   }, [viewMonth, selectedDate]);
+
+  useEffect(() => {
+    setViewMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
+  }, [selectedDate.getFullYear(), selectedDate.getMonth()]);
 
   const year = viewMonth.getFullYear();
   const month = viewMonth.getMonth();
@@ -62,24 +68,20 @@ export function CalendarHeader({ selectedDate, onSelectDate }: CalendarHeaderPro
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
+  const weeks: (number | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) {
+    weeks.push(cells.slice(i, i + 7));
+  }
+
+  const selectedLabel = `${selectedDate.getDate()} · ${strings.monthNames[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`;
+
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
+      <View style={styles.topRow}>
         <Text style={styles.title}>{strings.appTitle}</Text>
-      </View>
-
-      <View style={styles.dateDisplay}>
-        <Text style={styles.dayNumber}>{selectedDate.getDate()}</Text>
-        <View style={styles.dateInfo}>
-          <Text style={styles.monthYear}>
-            {strings.monthNames[selectedDate.getMonth()]} {selectedDate.getFullYear()}
-          </Text>
-          {isToday(selectedDate) && (
-            <View style={styles.todayBadge}>
-              <Text style={styles.todayText}>{strings.today}</Text>
-            </View>
-          )}
-        </View>
+        <TouchableOpacity onPress={goToToday} style={styles.todayBtn}>
+          <Text style={styles.todayBtnText}>{strings.today}</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.calendar}>
@@ -87,15 +89,18 @@ export function CalendarHeader({ selectedDate, onSelectDate }: CalendarHeaderPro
           <TouchableOpacity onPress={prevMonth} style={styles.navBtn}>
             <Text style={styles.navText}>‹</Text>
           </TouchableOpacity>
-          <Text style={styles.monthLabel}>
-            {monthName} {year}
-          </Text>
+          <View style={styles.monthCenter}>
+            <Text style={styles.monthLabel}>
+              {monthName} {year}
+            </Text>
+            <Text style={styles.selectedDate}>{selectedLabel}</Text>
+          </View>
           <TouchableOpacity onPress={nextMonth} style={styles.navBtn}>
             <Text style={styles.navText}>›</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.weekRow}>
+        <View style={styles.weekHeaderRow}>
           {strings.weekDays.map((day) => (
             <Text key={day} style={styles.weekDay}>
               {day}
@@ -104,44 +109,48 @@ export function CalendarHeader({ selectedDate, onSelectDate }: CalendarHeaderPro
         </View>
 
         <View style={styles.daysGrid}>
-          {cells.map((day, index) => {
-            if (day === null) {
-              return <View key={`empty-${index}`} style={styles.dayCell} />;
-            }
+          {weeks.map((week, weekIndex) => (
+            <View key={`week-${weekIndex}`} style={styles.weekRow}>
+              {week.map((day, dayIndex) => {
+                if (day === null) {
+                  return <View key={`empty-${weekIndex}-${dayIndex}`} style={styles.dayCell} />;
+                }
 
-            const date = new Date(year, month, day);
-            const selected = isSameDay(date, selectedDate);
-            const today = isToday(date);
-            const hasData = daysWithData.has(day);
+                const date = new Date(year, month, day);
+                const selected = isSameDay(date, selectedDate);
+                const today = isToday(date);
+                const hasData = daysWithData.has(day);
 
-            return (
-              <TouchableOpacity
-                key={day}
-                style={[
-                  styles.dayCell,
-                  today && styles.dayToday,
-                  selected && styles.daySelected,
-                ]}
-                onPress={() => onSelectDate(date)}
-              >
-                <Text
-                  style={[
-                    styles.dayText,
-                    today && styles.dayTextToday,
-                    selected && styles.dayTextSelected,
-                  ]}
-                >
-                  {day}
-                </Text>
-                {hasData && !selected && <View style={styles.dot} />}
-              </TouchableOpacity>
-            );
-          })}
+                return (
+                  <TouchableOpacity
+                    key={day}
+                    style={[
+                      styles.dayCell,
+                      today && styles.dayToday,
+                      selected && styles.daySelected,
+                    ]}
+                    onPress={() => onSelectDate(date)}
+                  >
+                    <Text
+                      style={[
+                        styles.dayText,
+                        today && styles.dayTextToday,
+                        selected && styles.dayTextSelected,
+                      ]}
+                    >
+                      {day}
+                    </Text>
+                    {hasData && !selected && <View style={styles.dot} />}
+                  </TouchableOpacity>
+                );
+              })}
+              {week.length < 7 &&
+                Array.from({ length: 7 - week.length }).map((_, i) => (
+                  <View key={`pad-${weekIndex}-${i}`} style={styles.dayCell} />
+                ))}
+            </View>
+          ))}
         </View>
-
-        <TouchableOpacity onPress={goToToday} style={styles.todayBtn}>
-          <Text style={styles.todayBtnText}>{strings.today}</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -150,100 +159,89 @@ export function CalendarHeader({ selectedDate, onSelectDate }: CalendarHeaderPro
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.header,
-    borderBottomLeftRadius: borderRadius.lg,
-    borderBottomRightRadius: borderRadius.lg,
-    paddingBottom: spacing.lg,
-  },
-  headerRow: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
     paddingBottom: spacing.sm,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    textAlign: 'center',
-  },
-  dateDisplay: {
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
   },
-  dayNumber: {
-    fontSize: 48,
-    fontWeight: '300',
-    color: colors.primary,
-    lineHeight: 52,
-  },
-  dateInfo: {
-    flex: 1,
-  },
-  monthYear: {
+  title: {
     fontSize: 16,
+    fontWeight: '600',
     color: colors.text,
-    fontWeight: '500',
   },
-  todayBadge: {
-    backgroundColor: colors.today,
+  todayBtn: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 4,
+    backgroundColor: colors.today,
     borderRadius: borderRadius.sm,
-    alignSelf: 'flex-start',
-    marginTop: spacing.xs,
   },
-  todayText: {
+  todayBtnText: {
     fontSize: 12,
     color: colors.check,
     fontWeight: '600',
   },
   calendar: {
-    marginHorizontal: spacing.lg,
+    marginHorizontal: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
-    padding: spacing.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   navBtn: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
   navText: {
-    fontSize: 24,
+    fontSize: 20,
     color: colors.textLight,
   },
+  monthCenter: {
+    alignItems: 'center',
+  },
   monthLabel: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.text,
   },
+  selectedDate: {
+    fontSize: 11,
+    color: colors.textLight,
+    marginTop: 2,
+  },
+  weekHeaderRow: {
+    flexDirection: 'row',
+    marginBottom: 2,
+  },
   weekRow: {
     flexDirection: 'row',
-    marginBottom: spacing.xs,
+    height: DAY_CELL_HEIGHT,
   },
   weekDay: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 11,
+    fontSize: 10,
     color: colors.textMuted,
     fontWeight: '500',
   },
-  daysGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
+  daysGrid: {},
   dayCell: {
-    width: '14.28%',
-    aspectRatio: 1,
+    flex: 1,
+    height: DAY_CELL_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -257,7 +255,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
   },
   dayText: {
-    fontSize: 14,
+    fontSize: 12,
     color: colors.text,
   },
   dayTextToday: {
@@ -270,21 +268,10 @@ const styles = StyleSheet.create({
   },
   dot: {
     position: 'absolute',
-    bottom: 4,
+    bottom: 2,
     width: 4,
     height: 4,
     borderRadius: 2,
     backgroundColor: colors.primary,
-  },
-  todayBtn: {
-    alignSelf: 'center',
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xs,
-  },
-  todayBtnText: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '600',
   },
 });
