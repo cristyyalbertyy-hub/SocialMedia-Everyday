@@ -5,19 +5,33 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { PLATFORMS, PlatformKey, ColumnKey } from '../constants/data';
 import { DayData } from '../types';
 import { SocialMediaPanel } from './SocialMediaPanel';
+import { SaveBar, SaveStatus } from './SaveBar';
 
 interface TrackingGridProps {
   data: DayData;
+  selectedDate: Date;
+  saveStatus: SaveStatus;
   onToggleTask: (platform: PlatformKey, column: ColumnKey) => void;
   onUpdateNotes: (platform: PlatformKey, notes: string) => void;
+  onSave: () => void;
 }
 
-export function TrackingGrid({ data, onToggleTask, onUpdateNotes }: TrackingGridProps) {
+export function TrackingGrid({
+  data,
+  selectedDate,
+  saveStatus,
+  onToggleTask,
+  onUpdateNotes,
+  onSave,
+}: TrackingGridProps) {
   const { strings } = useLanguage();
+  const dateLabel = `${selectedDate.getDate()} ${strings.monthNames[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>{strings.dayView}</Text>
+      <Text style={styles.sectionTitle}>
+        {strings.dayView} — {dateLabel}
+      </Text>
 
       {PLATFORMS.map((platform) => (
         <SocialMediaPanel
@@ -29,6 +43,8 @@ export function TrackingGrid({ data, onToggleTask, onUpdateNotes }: TrackingGrid
           onUpdateNotes={(text) => onUpdateNotes(platform, text)}
         />
       ))}
+
+      <SaveBar dateLabel={dateLabel} status={saveStatus} onSave={onSave} />
     </View>
   );
 }
@@ -36,7 +52,7 @@ export function TrackingGrid({ data, onToggleTask, onUpdateNotes }: TrackingGrid
 const styles = StyleSheet.create({
   container: {
     padding: spacing.lg,
-    paddingBottom: spacing.xl * 2,
+    paddingBottom: spacing.xl,
   },
   sectionTitle: {
     fontSize: 15,

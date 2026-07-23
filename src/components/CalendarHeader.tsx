@@ -12,6 +12,7 @@ import { getDaysWithData } from '../storage/dayStorage';
 interface CalendarHeaderProps {
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
+  dataVersion?: number;
 }
 
 const DAY_CELL_HEIGHT = 30;
@@ -28,7 +29,7 @@ function isToday(date: Date): boolean {
   return isSameDay(date, new Date());
 }
 
-export function CalendarHeader({ selectedDate, onSelectDate }: CalendarHeaderProps) {
+export function CalendarHeader({ selectedDate, onSelectDate, dataVersion = 0 }: CalendarHeaderProps) {
   const { strings } = useLanguage();
   const [viewMonth, setViewMonth] = useState(
     new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
@@ -37,7 +38,7 @@ export function CalendarHeader({ selectedDate, onSelectDate }: CalendarHeaderPro
 
   useEffect(() => {
     getDaysWithData(viewMonth.getFullYear(), viewMonth.getMonth()).then(setDaysWithData);
-  }, [viewMonth, selectedDate]);
+  }, [viewMonth, selectedDate, dataVersion]);
 
   useEffect(() => {
     setViewMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));

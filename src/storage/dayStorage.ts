@@ -11,6 +11,10 @@ export function formatDateKey(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+export function formatDateLabel(date: Date, monthNames: readonly string[]): string {
+  return `${date.getDate()} ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+}
+
 export function createEmptyTasks(): TaskGrid {
   const tasks = {} as TaskGrid;
   for (const platform of PLATFORMS) {

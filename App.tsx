@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, Component, ReactNode } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Component, ReactNode } from 'react';
 import {
   View,
   StyleSheet,
@@ -14,6 +14,7 @@ import { LanguageProvider } from './src/i18n/LanguageContext';
 import { CalendarHeader } from './src/components/CalendarHeader';
 import { TrackingGrid } from './src/components/TrackingGrid';
 import { LanguageToggle } from './src/components/LanguageToggle';
+import { SaveStatus } from './src/components/SaveBar';
 import { useLanguage } from './src/i18n/LanguageContext';
 import { DayData } from './src/types';
 import { PlatformKey, ColumnKey } from './src/constants/data';
@@ -49,6 +50,10 @@ function MainApp() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [dayData, setDayData] = useState<DayData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [dataVersion, setDataVersion] = useState(0);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -59,17 +64,52 @@ function MainApp() {
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
     setLoading(true);
+    setSaveStatus('idle');
     loadDayData(selectedDate).then((data) => {
       setDayData(data);
       setLoading(false);
     });
   }, [selectedDate]);
 
-  const persist = useCallback(async (updated: DayData) => {
-    setDayData(updated);
-    await saveDayData(updated);
+  const markSaved = useCallback(() => {
+    setDataVersion((v) => v + 1);
+    setSaveStatus('saved');
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2500);
   }, []);
+
+  const persist = useCallback(
+    async (updated: DayData) => {
+      setDayData(updated);
+      setSaveStatus('saving');
+      try {
+        await saveDayData(updated);
+        markSaved();
+      } catch {
+        setSaveStatus('idle');
+      }
+    },
+    [markSaved]
+  );
+
+  const handleManualSave = useCallback(async () => {
+    if (!dayData) return;
+    setSaveStatus('saving');
+    try {
+      await saveDayData(dayData);
+      markSaved();
+    } catch {
+      setSaveStatus('idle');
+    }
+  }, [dayData, markSaved]);
 
   const handleToggleTask = (platform: PlatformKey, column: ColumnKey) => {
     if (!dayData) return;
@@ -95,7 +135,9 @@ function MainApp() {
         [platform]: notes,
       },
     };
-    persist(updated);
+    setDayData(updated);
+    if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
+    notesTimerRef.current = setTimeout(() => persist(updated), 600);
   };
 
   return (
@@ -117,6 +159,7 @@ function MainApp() {
         <CalendarHeader
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
+          dataVersion={dataVersion}
         />
 
         <Text style={styles.scrollHint}>{strings.scrollHint}</Text>
@@ -128,8 +171,11 @@ function MainApp() {
         ) : (
           <TrackingGrid
             data={dayData}
+            selectedDate={selectedDate}
+            saveStatus={saveStatus}
             onToggleTask={handleToggleTask}
             onUpdateNotes={handleUpdateNotes}
+            onSave={handleManualSave}
           />
         )}
       </ScrollView>
