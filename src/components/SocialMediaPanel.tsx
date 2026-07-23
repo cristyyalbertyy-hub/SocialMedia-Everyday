@@ -37,7 +37,7 @@ export function SocialMediaPanel({
     <View style={[styles.panel, { borderLeftColor: platformAccent[platform] }]}>
       <Text style={styles.platformName}>{strings.platforms[platform]}</Text>
 
-      <View style={styles.actionsGrid}>
+      <View style={styles.actionsRow}>
         {COLUMNS.map((col) => (
           <View key={col} style={styles.actionItem}>
             <Text style={styles.actionLabel} numberOfLines={2}>
@@ -46,6 +46,7 @@ export function SocialMediaPanel({
             <CheckCell
               checked={tasks[col]}
               onToggle={() => onToggleTask(col)}
+              compact
             />
           </View>
         ))}
@@ -72,28 +73,27 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.md,
   },
-  actionsGrid: {
+  actionsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: spacing.xs,
     marginBottom: spacing.sm,
   },
   actionItem: {
-    width: '30%',
-    minWidth: 90,
-    flexGrow: 1,
+    flex: 1,
+    minWidth: 0,
     alignItems: 'center',
     backgroundColor: colors.surfaceAlt,
     borderRadius: borderRadius.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: 2,
   },
   actionLabel: {
-    fontSize: 11,
+    fontSize: 9,
     color: colors.textLight,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: spacing.sm,
-    minHeight: 28,
+    marginBottom: spacing.xs,
+    minHeight: 24,
+    lineHeight: 11,
   },
 });

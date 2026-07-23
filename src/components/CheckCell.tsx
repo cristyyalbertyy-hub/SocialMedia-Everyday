@@ -5,16 +5,17 @@ import { colors, borderRadius } from '../constants/theme';
 interface CheckCellProps {
   checked: boolean;
   onToggle: () => void;
+  compact?: boolean;
 }
 
-export function CheckCell({ checked, onToggle }: CheckCellProps) {
+export function CheckCell({ checked, onToggle, compact }: CheckCellProps) {
   return (
     <TouchableOpacity
-      style={[styles.cell, checked && styles.cellChecked]}
+      style={[styles.cell, compact && styles.cellCompact, checked && styles.cellChecked]}
       onPress={onToggle}
       activeOpacity={0.7}
     >
-      {checked && <Text style={styles.checkmark}>✓</Text>}
+      {checked && <Text style={[styles.checkmark, compact && styles.checkmarkCompact]}>✓</Text>}
     </TouchableOpacity>
   );
 }
@@ -30,6 +31,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  cellCompact: {
+    width: 30,
+    height: 30,
+  },
   cellChecked: {
     backgroundColor: colors.checkBg,
     borderColor: colors.check,
@@ -38,5 +43,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: colors.check,
     fontWeight: '600',
+  },
+  checkmarkCompact: {
+    fontSize: 15,
   },
 });
