@@ -14,7 +14,6 @@ interface TrackingGridProps {
   cloudSync?: boolean;
   onToggleTask: (platform: PlatformKey, column: ColumnKey) => void;
   onUpdateNotes: (platform: PlatformKey, notes: string) => void;
-  onSave: () => void;
 }
 
 export function TrackingGrid({
@@ -24,7 +23,6 @@ export function TrackingGrid({
   cloudSync,
   onToggleTask,
   onUpdateNotes,
-  onSave,
 }: TrackingGridProps) {
   const { strings } = useLanguage();
   const dateLabel = `${selectedDate.getDate()} ${strings.monthNames[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`;
@@ -46,7 +44,7 @@ export function TrackingGrid({
         />
       ))}
 
-      <SaveBar dateLabel={dateLabel} status={saveStatus} onSave={onSave} cloudSync={cloudSync} />
+      <SaveBar dateLabel={dateLabel} status={saveStatus} cloudSync={cloudSync} />
     </View>
   );
 }

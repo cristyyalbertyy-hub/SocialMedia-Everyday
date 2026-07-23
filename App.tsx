@@ -104,17 +104,6 @@ function MainApp() {
     [markSaved, userId]
   );
 
-  const handleManualSave = useCallback(async () => {
-    if (!dayData) return;
-    setSaveStatus('saving');
-    try {
-      await saveDayData(dayData, userId);
-      markSaved();
-    } catch {
-      setSaveStatus('idle');
-    }
-  }, [dayData, markSaved, userId]);
-
   const handleToggleTask = (platform: PlatformKey, column: ColumnKey) => {
     if (!dayData) return;
     const updated: DayData = {
@@ -184,7 +173,6 @@ function MainApp() {
             cloudSync={isCloudEnabled && !!userId}
             onToggleTask={handleToggleTask}
             onUpdateNotes={handleUpdateNotes}
-            onSave={handleManualSave}
           />
         )}
       </ScrollView>

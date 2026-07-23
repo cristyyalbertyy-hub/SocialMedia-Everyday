@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { colors, spacing, borderRadius } from '../constants/theme';
 import { useLanguage } from '../i18n/LanguageContext';
 
@@ -8,38 +8,27 @@ export type SaveStatus = 'idle' | 'saving' | 'saved';
 interface SaveBarProps {
   dateLabel: string;
   status: SaveStatus;
-  onSave: () => void;
   cloudSync?: boolean;
 }
 
-export function SaveBar({ dateLabel, status, onSave, cloudSync }: SaveBarProps) {
+export function SaveBar({ dateLabel, status, cloudSync }: SaveBarProps) {
   const { strings } = useLanguage();
 
   return (
     <View style={styles.container}>
-      <View style={styles.info}>
-        <Text style={styles.dateLabel}>{strings.savedForDay}: {dateLabel}</Text>
-        <Text style={styles.hint}>
-          {cloudSync ? strings.cloudSyncHint : strings.autoSaveHint}
-        </Text>
-        {status === 'saved' && (
-          <Text style={styles.savedText}>✓ {strings.saved}</Text>
-        )}
-        {status === 'saving' && (
-          <View style={styles.savingRow}>
-            <ActivityIndicator size="small" color={colors.primary} />
-            <Text style={styles.savingText}>{strings.saving}</Text>
-          </View>
-        )}
-      </View>
-      <TouchableOpacity
-        style={[styles.saveBtn, status === 'saving' && styles.saveBtnDisabled]}
-        onPress={onSave}
-        disabled={status === 'saving'}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.saveBtnText}>{strings.save}</Text>
-      </TouchableOpacity>
+      <Text style={styles.dateLabel}>{strings.savedForDay}: {dateLabel}</Text>
+      <Text style={styles.hint}>
+        {cloudSync ? strings.cloudSyncHint : strings.autoSaveHint}
+      </Text>
+      {status === 'saved' && (
+        <Text style={styles.savedText}>✓ {strings.saved}</Text>
+      )}
+      {status === 'saving' && (
+        <View style={styles.savingRow}>
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={styles.savingText}>{strings.saving}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -52,9 +41,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: spacing.md,
-  },
-  info: {
     gap: spacing.xs,
   },
   dateLabel: {
@@ -79,19 +65,5 @@ const styles = StyleSheet.create({
   savingText: {
     fontSize: 12,
     color: colors.textLight,
-  },
-  saveBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.sm,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  saveBtnDisabled: {
-    opacity: 0.7,
-  },
-  saveBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.white,
   },
 });
