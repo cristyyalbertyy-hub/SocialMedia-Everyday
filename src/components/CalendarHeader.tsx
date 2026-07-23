@@ -7,7 +7,8 @@ import {
 } from 'react-native';
 import { colors, spacing, borderRadius } from '../constants/theme';
 import { useLanguage } from '../i18n/LanguageContext';
-import { getDaysWithData } from '../storage/dayStorage';
+import { getDaysWithData } from '../storage/dataService';
+import { useAuth } from '../auth/AuthContext';
 
 interface CalendarHeaderProps {
   selectedDate: Date;
@@ -31,14 +32,15 @@ function isToday(date: Date): boolean {
 
 export function CalendarHeader({ selectedDate, onSelectDate, dataVersion = 0 }: CalendarHeaderProps) {
   const { strings } = useLanguage();
+  const { user, signOut, isCloudEnabled } = useAuth();
   const [viewMonth, setViewMonth] = useState(
     new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
   );
   const [daysWithData, setDaysWithData] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    getDaysWithData(viewMonth.getFullYear(), viewMonth.getMonth()).then(setDaysWithData);
-  }, [viewMonth, selectedDate, dataVersion]);
+    getDaysWithData(viewMonth.getFullYear(), viewMonth.getMonth(), user?.id ?? null).then(setDaysWithData);
+  }, [viewMonth, selectedDate, dataVersion, user?.id]);
 
   useEffect(() => {
     setViewMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
@@ -80,9 +82,16 @@ export function CalendarHeader({ selectedDate, onSelectDate, dataVersion = 0 }: 
     <View style={styles.container}>
       <View style={styles.topRow}>
         <Text style={styles.title}>{strings.appTitle}</Text>
-        <TouchableOpacity onPress={goToToday} style={styles.todayBtn}>
-          <Text style={styles.todayBtnText}>{strings.today}</Text>
-        </TouchableOpacity>
+        <View style={styles.topActions}>
+          {isCloudEnabled && user && (
+            <TouchableOpacity onPress={signOut} style={styles.logoutBtn}>
+              <Text style={styles.logoutText}>{strings.logout}</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={goToToday} style={styles.todayBtn}>
+            <Text style={styles.todayBtnText}>{strings.today}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.calendar}>
@@ -176,6 +185,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
+    flex: 1,
+  },
+  topActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  logoutBtn: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  logoutText: {
+    fontSize: 12,
+    color: colors.textLight,
+    fontWeight: '500',
   },
   todayBtn: {
     paddingHorizontal: spacing.sm,

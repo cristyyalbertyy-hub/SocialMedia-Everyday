@@ -9,16 +9,19 @@ interface SaveBarProps {
   dateLabel: string;
   status: SaveStatus;
   onSave: () => void;
+  cloudSync?: boolean;
 }
 
-export function SaveBar({ dateLabel, status, onSave }: SaveBarProps) {
+export function SaveBar({ dateLabel, status, onSave, cloudSync }: SaveBarProps) {
   const { strings } = useLanguage();
 
   return (
     <View style={styles.container}>
       <View style={styles.info}>
         <Text style={styles.dateLabel}>{strings.savedForDay}: {dateLabel}</Text>
-        <Text style={styles.hint}>{strings.autoSaveHint}</Text>
+        <Text style={styles.hint}>
+          {cloudSync ? strings.cloudSyncHint : strings.autoSaveHint}
+        </Text>
         {status === 'saved' && (
           <Text style={styles.savedText}>✓ {strings.saved}</Text>
         )}

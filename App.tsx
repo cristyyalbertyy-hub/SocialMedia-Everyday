@@ -9,16 +9,18 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from './src/constants/theme';
+import { colors, spacing } from './src/constants/theme';
 import { LanguageProvider } from './src/i18n/LanguageContext';
+import { AuthProvider, useAuth } from './src/auth/AuthContext';
 import { CalendarHeader } from './src/components/CalendarHeader';
 import { TrackingGrid } from './src/components/TrackingGrid';
 import { LanguageToggle } from './src/components/LanguageToggle';
+import { AuthScreen } from './src/components/AuthScreen';
 import { SaveStatus } from './src/components/SaveBar';
 import { useLanguage } from './src/i18n/LanguageContext';
 import { DayData } from './src/types';
 import { PlatformKey, ColumnKey } from './src/constants/data';
-import { loadDayData, saveDayData } from './src/storage/dayStorage';
+import { loadDayData, saveDayData } from './src/storage/dataService';
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -47,6 +49,8 @@ const Screen = Platform.OS === 'web' ? View : SafeAreaView;
 
 function MainApp() {
   const { strings } = useLanguage();
+  const { user, isCloudEnabled } = useAuth();
+  const userId = user?.id ?? null;
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [dayData, setDayData] = useState<DayData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,11 +77,11 @@ function MainApp() {
   useEffect(() => {
     setLoading(true);
     setSaveStatus('idle');
-    loadDayData(selectedDate).then((data) => {
+    loadDayData(selectedDate, userId).then((data) => {
       setDayData(data);
       setLoading(false);
     });
-  }, [selectedDate]);
+  }, [selectedDate, userId]);
 
   const markSaved = useCallback(() => {
     setDataVersion((v) => v + 1);
@@ -91,25 +95,25 @@ function MainApp() {
       setDayData(updated);
       setSaveStatus('saving');
       try {
-        await saveDayData(updated);
+        await saveDayData(updated, userId);
         markSaved();
       } catch {
         setSaveStatus('idle');
       }
     },
-    [markSaved]
+    [markSaved, userId]
   );
 
   const handleManualSave = useCallback(async () => {
     if (!dayData) return;
     setSaveStatus('saving');
     try {
-      await saveDayData(dayData);
+      await saveDayData(dayData, userId);
       markSaved();
     } catch {
       setSaveStatus('idle');
     }
-  }, [dayData, markSaved]);
+  }, [dayData, markSaved, userId]);
 
   const handleToggleTask = (platform: PlatformKey, column: ColumnKey) => {
     if (!dayData) return;
@@ -162,6 +166,10 @@ function MainApp() {
           dataVersion={dataVersion}
         />
 
+        {!isCloudEnabled && (
+          <Text style={styles.localBanner}>{strings.localOnlyHint}</Text>
+        )}
+
         <Text style={styles.scrollHint}>{strings.scrollHint}</Text>
 
         {loading || !dayData ? (
@@ -173,6 +181,7 @@ function MainApp() {
             data={dayData}
             selectedDate={selectedDate}
             saveStatus={saveStatus}
+            cloudSync={isCloudEnabled && !!userId}
             onToggleTask={handleToggleTask}
             onUpdateNotes={handleUpdateNotes}
             onSave={handleManualSave}
@@ -183,10 +192,30 @@ function MainApp() {
   );
 }
 
+function AppContent() {
+  const { session, loading, isCloudEnabled } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={styles.bootLoading}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (isCloudEnabled && !session) {
+    return <AuthScreen />;
+  }
+
+  return <MainApp />;
+}
+
 export default function App() {
   const content = (
     <LanguageProvider>
-      <MainApp />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </LanguageProvider>
   );
 
@@ -222,6 +251,13 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 32,
   },
+  localBanner: {
+    textAlign: 'center',
+    fontSize: 11,
+    color: colors.textMuted,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+  },
   scrollHint: {
     textAlign: 'center',
     fontSize: 12,
@@ -232,6 +268,13 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  bootLoading: {
+    flex: 1,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...(Platform.OS === 'web' ? ({ minHeight: '100vh' } as object) : {}),
   },
   errorBox: {
     flex: 1,

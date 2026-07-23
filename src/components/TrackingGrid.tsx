@@ -11,6 +11,7 @@ interface TrackingGridProps {
   data: DayData;
   selectedDate: Date;
   saveStatus: SaveStatus;
+  cloudSync?: boolean;
   onToggleTask: (platform: PlatformKey, column: ColumnKey) => void;
   onUpdateNotes: (platform: PlatformKey, notes: string) => void;
   onSave: () => void;
@@ -20,6 +21,7 @@ export function TrackingGrid({
   data,
   selectedDate,
   saveStatus,
+  cloudSync,
   onToggleTask,
   onUpdateNotes,
   onSave,
@@ -44,7 +46,7 @@ export function TrackingGrid({
         />
       ))}
 
-      <SaveBar dateLabel={dateLabel} status={saveStatus} onSave={onSave} />
+      <SaveBar dateLabel={dateLabel} status={saveStatus} onSave={onSave} cloudSync={cloudSync} />
     </View>
   );
 }
